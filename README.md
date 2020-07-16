@@ -40,7 +40,7 @@ The proposed approach is end-to-end and can be trained together with the CAM bra
 python run_icd.py --gpus 0,1 --image-root Your/VOC2012/JPEGImages --annotation-root Your/VOC2012/Annotations --superpixel-root ./data/superpixels/voc_superpixels
 ```
 
-The above script contains codes for training and generating the seeds. By default, the seeds will be located at `./snapshot/icd/results/seeds/crf`. After obtaining the seeds, you can take them as pseudo labels and train any existing segmentation models on the training set, for example, the DeepLab-v2 used in the paper.
+The above script contains codes for training and generating the seeds. By default, the seeds will be generated at `./snapshot/icd/results/seeds/crf`. After obtaining the seeds, you can take them as pseudo labels and train any segmentation models on the training set, for example, the DeepLab-v2 used in the paper. Codes to train the Deeplab-v2 models will also be released soon.
 
 ## Citation
 
