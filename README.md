@@ -19,6 +19,29 @@ The proposed approach is end-to-end and can be trained together with the CAM bra
 
 
 
+## Prerequisite
+
+- Python 3.7, MXNet 1.3.1, Numpy, OpenCV, [pydensecrf](https://github.com/lucasb-eyer/pydensecrf)
+- NVIDIA GPU
+
+
+
+## Usage
+
+**Prepare the data and pretrained parameters:**
+
+- Download the VOC 2012 dataset, which should contain `VOC2012/JPEGImages` and `VOC2012/Annotations`.
+- Download the ImageNet pretrained parameters for the [VGG16 backbone](https://drive.google.com/file/d/1SVQgdnuhL7Wo3XIDfwhjVMTk_N1qiVHw/view?usp=sharing) and put it in the folder `ICD/data/pretrained`
+- Download the pre-computed superpixels from [here](https://drive.google.com/file/d/1zU2RRBvHueK6PsOFK71cDLyhbROeAzaT/view?usp=sharing), untar it, and put it into the folder `ICD/data/superpixels`. 
+
+**Run:**
+
+```
+python run_icd.py --gpus 0,1 --image-root Your/VOC2012/JPEGImages --annotation-root Your/VOC2012/Annotations --superpixel-root ./data/superpixels/voc_superpixels
+```
+
+The above script contains codes for training and generating the seeds. By default, the seeds will be located at `./snapshot/icd/results/seeds/crf`. After obtaining the seeds, you can take them as pseudo labels and train any existing segmentation models on the training set, for example, the DeepLab-v2 used in the paper.
+
 ## Citation
 
 ```

@@ -24,4 +24,5 @@ __pycache__
 # Others
 trash
 snapshot
+tmp
 *.tar
