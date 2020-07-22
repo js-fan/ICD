@@ -32,7 +32,15 @@ The proposed approach is end-to-end and can be trained together with the CAM bra
 
 - Download the VOC 2012 dataset, which should contain `VOC2012/JPEGImages` and `VOC2012/Annotations`.
 - Download the ImageNet pretrained parameters for the [VGG16 backbone](https://drive.google.com/file/d/1SVQgdnuhL7Wo3XIDfwhjVMTk_N1qiVHw/view?usp=sharing) and put it in the folder `ICD/data/pretrained`
-- Download the pre-computed superpixels from [here](https://drive.google.com/file/d/1vciTj1z32JF6CwNKBc87ypGDLgb8oIQ3/view?usp=sharing), untar it, and put it into the folder `ICD/data/superpixels`. We will also release scripts for computing these superpixels soon.
+- Download the pre-computed superpixels [here](https://drive.google.com/file/d/1vciTj1z32JF6CwNKBc87ypGDLgb8oIQ3/view?usp=sharing), untar it, and put it into the folder `ICD/data/superpixels`. You can also generate them by yourself, to do this, please follow the following commands:
+
+```
+cd external/superpixel
+make -j8   ## relies on OpenCV, edit Makefile if necessary.
+./makeSuperpixel ../../data/VOC2012/train_aug.txt Your/VOC2012/JPEGImages ./data/VOC 75
+cd ../..
+python generate_superpixel.py
+```
 
 **Run:**
 
