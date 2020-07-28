@@ -42,7 +42,7 @@ cd ../..
 python generate_superpixel.py
 ```
 
-**Run:**
+**Train ICD and generate pseudo-masks:**
 
 ```
 python run_icd.py --gpus 0,1 --image-root Your/VOC2012/JPEGImages --annotation-root Your/VOC2012/Annotations --superpixel-root ./data/superpixels/voc_superpixels
