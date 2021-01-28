@@ -51,7 +51,7 @@ The above script contains codes for training and generating the seeds. By defaul
 
 **Generate seeds with saliency maps:**
 
-To generate seeds with the saliency, you need pre-computed saliency maps firstly. We adopt the same saliency maps used by the [OAA project](https://github.com/PengtaoJiang/OAA), and the saliency maps can be downloaded from [here](https://drive.google.com/file/d/1MVbisWvcikdg_hRuK5gbhtGDV-g3TJXd/view?usp=sharing). To generate seeds with saliency maps, use the `--use-sal` flag, e.g.,
+To generate seeds with the saliency, you need pre-computed saliency maps firstly. We adopt the same saliency maps used by the [OAA project](https://github.com/PengtaoJiang/OAA), and the saliency maps can be downloaded [here](https://drive.google.com/file/d/1MVbisWvcikdg_hRuK5gbhtGDV-g3TJXd/view?usp=sharing). To generate seeds with saliency maps, use the `--use-sal` flag, e.g.,
 
 ```
 python run_icd.py --image-root Your/VOC2012/JPEGImages --annotation-root Your/VOC2012/Annotations --use-sal --only-gen-seeds
