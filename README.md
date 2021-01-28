@@ -7,15 +7,14 @@ Learning Integral Objects with Intra-Class Discriminator for Weakly-Supervised S
 
 The previous class activation map (CAM) based approach learns inter-class boundaries, which focus on the difference between different foreground classes. It may not be optimal for the weakly supervised segmentation problem because the target object and the background share the same classes in the same image. To alleviate this problem, we propose an ICD approach to learning per-category intra-class boundaries between the foreground objects and the background, which is more appropriate for weakly supervised segmentation problems.
 
-<img src=".fig_introduction.png" alt="motivation" style="zoom:45%;" />
-
+![introduction](resources/introduction.jpg)
 
 
 The proposed approach is end-to-end and can be trained together with the CAM branch in a single round. The pseudo-masks derived by the proposed ICD is more complete than the CAM based results.
 
-![framework](.fig_framework.png)
+![framework](resources/framework.jpg)
 
-![visualization](.fig_visualization.png)
+![visualization](resources/visualization.jpg)
 
 
 
@@ -49,6 +48,17 @@ python run_icd.py --gpus 0,1 --image-root Your/VOC2012/JPEGImages --annotation-r
 ```
 
 The above script contains codes for training and generating the seeds. By default, the seeds will be generated at `./snapshot/icd/results/seeds/crf`. After obtaining the seeds, you can take them as pseudo labels and train any segmentation models on the training set, for example, the DeepLab-v2 used in the paper. Codes to train the Deeplab-v2 models will also be released soon.
+
+**Generate seeds with saliency maps:**
+
+To generate seeds with the saliency, you need pre-computed saliency maps firstly. We adopt the same saliency maps used by the [OAA project](https://github.com/PengtaoJiang/OAA), and the saliency maps can be downloaded from [here](https://drive.google.com/file/d/1MVbisWvcikdg_hRuK5gbhtGDV-g3TJXd/view?usp=sharing). To generate seeds with saliency maps, use the `--use-sal` flag, e.g.,
+
+```
+python run_icd.py --image-root Your/VOC2012/JPEGImages --annotation-root Your/VOC2012/Annotations --use-sal --only-gen-seeds
+```
+
+Seeds will be placed in `./snapshot/icd/results/seeds/sal` by default.
+
 
 ## Citation
 

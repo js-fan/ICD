@@ -214,7 +214,8 @@ def run_infer(args):
             img = imvstack(v_images)
             imwrite(os.path.join(args.snapshot, 'results', 'scores_demo', 'class_%d.jpg' % L), img)
 
-def _generate_seed(name, cam_root, icd_root, img_root, ann_root, save_root, infer_size, num_cls, confidence):
+def _generate_seed(name, cam_root, icd_root, img_root, ann_root, sal_root, save_root,
+        infer_size, num_cls, confidence):
     label = VOC.get_annotation(os.path.join(ann_root, name+'.xml'))
 
     image = cv2.imread(os.path.join(img_root, name+'.jpg'))
@@ -236,8 +237,18 @@ def _generate_seed(name, cam_root, icd_root, img_root, ann_root, save_root, infe
 
     fg = proposal_fg.max(axis=0)
 
-    scores_bg = np.minimum(scores, 0) / np.minimum(scores.min(axis=(1, 2), keepdims=True), -1e-5)
-    bg = (scores_bg > 1e-5).min(axis=0)
+    if sal_root is not None:
+        sal_src = os.path.join(sal_root, name + '.png')
+        assert os.path.exists(sal_src), sal_src
+        sal = cv2.imread(sal_src, 0).astype(np.float32) / 255
+        bg = sal < 0.01
+
+        if (1. - float(bg.sum()) / bg.size) < 0.01:
+            scores_bg = np.minimum(scores, 0) / np.minimum(scores.min(axis=(1, 2), keepdims=True), -1e-5)
+            bg &= (scores_bg > 1e-5).min(axis=0)
+    else: 
+        scores_bg = np.minimum(scores, 0) / np.minimum(scores.min(axis=(1, 2), keepdims=True), -1e-5)
+        bg = (scores_bg > 1e-5).min(axis=0)
 
     undefined = ~(bg ^ fg)
 
@@ -247,36 +258,39 @@ def _generate_seed(name, cam_root, icd_root, img_root, ann_root, save_root, infe
     seed = (np.array(label) + 1)[candidate_fg.ravel()].reshape(h, w).astype(np.uint8)
     seed[bg] = 0
     seed[undefined] = 255
-    imwrite(os.path.join(save_root, 'nocrf', name+'.png'), seed)
 
-    # crf refine
-    seed_prob = confidence
-    res_prob = (1 - seed_prob) / num_cls
+    if sal_root is not None:
+        imwrite(os.path.join(save_root, 'sal', name+'.png'), seed)
+    else:
+        # crf refine
+        seed_prob = confidence
+        res_prob = (1 - seed_prob) / num_cls
 
-    prob = np.full((256, h*w), res_prob, np.float32)
-    prob[seed.ravel(), np.arange(h*w)] = seed_prob
-    prob = prob[:num_cls]
-    prob /= prob.sum(axis=0, keepdims=True)
-    u = -np.log(np.maximum(prob, 1e-5))
+        prob = np.full((256, h*w), res_prob, np.float32)
+        prob[seed.ravel(), np.arange(h*w)] = seed_prob
+        prob = prob[:num_cls]
+        prob /= prob.sum(axis=0, keepdims=True)
+        u = -np.log(np.maximum(prob, 1e-5))
 
-    d = dcrf.DenseCRF2D(w, h, num_cls)
-    d.setUnaryEnergy(u)
-    d.addPairwiseGaussian(sxy=3, compat=3)
-    d.addPairwiseBilateral(sxy=80, srgb=13, rgbim=image[..., ::-1].copy(), compat=10)
+        d = dcrf.DenseCRF2D(w, h, num_cls)
+        d.setUnaryEnergy(u)
+        d.addPairwiseGaussian(sxy=3, compat=3)
+        d.addPairwiseBilateral(sxy=80, srgb=13, rgbim=image[..., ::-1].copy(), compat=10)
 
-    prob_crf = d.inference(10)
-    prob_crf = np.array(prob_crf).reshape(num_cls, h, w)
-    prob_crf /= prob_crf.sum(axis=0, keepdims=True)
+        prob_crf = d.inference(10)
+        prob_crf = np.array(prob_crf).reshape(num_cls, h, w)
+        prob_crf /= prob_crf.sum(axis=0, keepdims=True)
 
-    seed_crf = prob_crf.argmax(axis=0).astype(np.uint8)
-    seed_crf[prob_crf.max(axis=0) < 0.1] = 255
-    imwrite(os.path.join(save_root, 'crf', name+'.png'), seed_crf)
+        seed_crf = prob_crf.argmax(axis=0).astype(np.uint8)
+        seed_crf[prob_crf.max(axis=0) < 0.1] = 255
+        imwrite(os.path.join(save_root, 'crf', name+'.png'), seed_crf)
 
 def run_generate_seeds(args, num_process=32):
     cam_root = os.path.join(args.snapshot, 'results', 'scores_cam')
     icd_root = os.path.join(args.snapshot, 'results', 'scores_icd')
     img_root = args.image_root
     ann_root = args.annotation_root
+    sal_root = args.saliency_root if args.use_sal else None
     infer_size = args.image_size
     save_root = os.path.join(args.snapshot, 'results', 'seeds')
     num_cls = args.num_cls + 1 # includes bg
@@ -286,7 +300,7 @@ def run_generate_seeds(args, num_process=32):
         names = [x.strip() for x in f.readlines()]
 
     pool = mp.Pool(num_process)
-    jobs = [pool.apply_async(_generate_seed, (name, cam_root, icd_root, img_root, ann_root, save_root,
+    jobs = [pool.apply_async(_generate_seed, (name, cam_root, icd_root, img_root, ann_root, sal_root, save_root,
         infer_size, num_cls, confidence)) for name in names]
     [job.get() for job in jobs]
 
@@ -298,6 +312,7 @@ if __name__ == '__main__':
     parser.add_argument('--image-root', type=str, default=dataset_root+'/JPEGImages')
     parser.add_argument('--annotation-root', type=str, default=dataset_root+'/Annotations')
     parser.add_argument('--superpixel-root', type=str, default='./data/superpixels/voc_superpixels')
+    parser.add_argument('--saliency-root', type=str, default='./data/saliency/saliency_aug')
     parser.add_argument('--data-list',  type=str, default='./data/VOC2012/train_aug.txt')
 
     parser.add_argument('--model',      type=str, default='vgg16_icd')
@@ -315,6 +330,8 @@ if __name__ == '__main__':
     parser.add_argument('--num-save', type=int, default=5)
     parser.add_argument('--log-frequency', type=int, default=5)
     parser.add_argument('--gpus', type=str, default='0,1')
+    parser.add_argument('--use-sal', action='store_true', help='Whether use the saliency map to generate seeds.')
+    parser.add_argument('--only-gen-seeds', action='store_true')
 
     args = parser.parse_args()
     args.log_frequency = max(10582 // (args.batch_size * 20), 5)
@@ -324,13 +341,14 @@ if __name__ == '__main__':
     assert os.path.exists(args.superpixel_root)
     assert os.path.exists(args.pretrained)
 
-    # train
-    run_training(args)
+    if not args.only_gen_seeds:
+        # train
+        run_training(args)
 
-    # infer icd scores
-    args.batch_size = 4
-    args.image_size = 513
-    run_infer(args)
+        # infer icd scores
+        args.batch_size = 4
+        args.image_size = 513
+        run_infer(args)
 
     # generate seeds
     run_generate_seeds(args)

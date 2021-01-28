@@ -42,7 +42,8 @@ def compute_iou(names, num_cls, target_root, gt_root, num_threads=16, arr_=None)
 
 if __name__ == '__main__':
     gt = 'VOC2012/extra/SegmentationClassAug'
-    target = 'snapshot/icd/results/seeds/crf'
+    target = './snapshot/icd/results/seeds/crf'
+    #target = './snapshot/icd/results/seeds/sal'
     iou = compute_iou('./data/VOC2012/train_aug.txt', 21, target, gt)
     print('[{}] mIoU: {}\n{}'.format(target, iou.mean(), iou))
 
